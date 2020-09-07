@@ -1,55 +1,34 @@
 <template>
     <div id="home">
         <nav-bar class="home-nav"><div slot="center">购物街</div></nav-bar>
-        <home-swiper :banners="banners"/>
-        <recommend-view :recommends="recommends"/>
-        <feature-view/>
-        <tab-control :titles="['流行', '新款', '精选']" class="tab-control"/>
 
-        <ul>
-            <li>列表1</li>
-            <li>列表2</li>
-            <li>列表3</li>
-            <li>列表4</li>
-            <li>列表5</li>
-            <li>列表6</li>
-            <li>列表7</li>
-            <li>列表8</li>
-            <li>列表9</li>
-            <li>列表10</li>
-            <li>列表11</li>
-            <li>列表12</li>
-            <li>列表13</li>
-            <li>列表14</li>
-            <li>列表15</li>
-            <li>列表16</li>
-            <li>列表17</li>
-            <li>列表18</li>
-            <li>列表19</li>
-            <li>列表20</li>
-            <li>列表21</li>
-            <li>列表22</li>
-            <li>列表23</li>
-            <li>列表24</li>
-            <li>列表25</li>
-            <li>列表26</li>
-            <li>列表27</li>
-            <li>列表28</li>
-            <li>列表29</li>
-            <li>列表30</li>
-            <li>列表31</li>
-            <li>列表32</li>
-            <li>列表33</li>
-            <li>列表34</li>
-            <li>列表35</li>
-            <li>列表36</li>
-        </ul>
+        <scroll 
+        class="content" 
+        ref="scroll" 
+        :probe-type="3" 
+        @scroll="contentScroll"
+        :pull-up-load="true" 
+        @pullingUp="loadMore">
+           <home-swiper :banners="banners"/> 
+           <recommend-view :recommends="recommends"/>
+           <feature-view/>
+           <tab-control class="tab-control"
+                        :titles="['流行', '新款', '精选']"
+                        @tabClick="tabClick"/>
+            <goods-list :goods="showGoods"/>
+        </scroll>
+
+        <!-- .native 监听组件的原生事件，必须给事件加上.native修饰 -->
+        <back-top @click.native="backClick" v-show="isShowBackTop"/>
     </div>
 </template>
 
 <script>
 import NavBar from 'components/common/navbar/NavBar'
+import Scroll from 'components/common/scroll/Scroll'
 import TabControl from 'components/content/tabControl/TabControl'
+import GoodsList from 'components/content/goods/GoodsList'
+import BackTop from 'components/content/backTop/BackTop'
 
 import HomeSwiper from './childComps/HomeSwiper'
 import RecommendView from './childComps/RecommendView'
@@ -64,7 +43,10 @@ export default {
         HomeSwiper,
         RecommendView,
         FeatureView,
-        TabControl
+        TabControl,
+        GoodsList,
+        Scroll,
+        BackTop
     },
     data() {
         return {
@@ -74,7 +56,14 @@ export default {
                 'pop' :{page: 0, list: []},
                 'new' :{page: 0, list: []},
                 'sell' :{page: 0, list: []}
-            }
+            },
+            currentType: 'pop',
+            isShowBackTop: false
+        }
+    },
+    computed: {
+        showGoods() {
+            return this.goods[this.currentType].list
         }
     },
     created() {
@@ -86,6 +75,39 @@ export default {
         this.getHomeGoods('sell');
     },
     methods: {
+        /* 
+            事件监听的方法
+        */
+       tabClick(index) {
+           switch(index) {
+               case 0:
+                   this.currentType = 'pop'
+                   break;
+                case 1:
+                    this.currentType = 'new'
+                    break;
+                case 2:
+                    this.currentType = 'sell'
+                    break;
+           }
+       },
+       backClick() {
+        //    console.log('backClick');
+        this.$refs.scroll.scrollTo(0, 0, 300)
+       },
+       contentScroll(position) {
+        // console.log(position);
+        this.isShowBackTop =  -position.y > 1000
+       },
+       loadMore() {
+           this.getHomeGoods(this.currentType)
+
+        //    this.$refs.scroll.scroll.refresh()
+       },
+
+        /* 
+            网络请求相关的方法
+        */
         getHomeMultidata() {
             getHomeMultidata().then(res => {
                 // console.log(res);
@@ -98,6 +120,9 @@ export default {
             getHomeGoods(type,page).then(res => {
                 this.goods[type].list.push(...res.data.list)
                 this.goods[type].page += 1
+
+                // 实现可多次上拉加载
+                this.$refs.scroll.finishPullUp()
             })
         }
     }
@@ -122,6 +147,17 @@ export default {
 
     .tab-control{
         position: sticky;
+        top: 43px;
+        z-index: 9;
+    }
+
+    .content{
+        /* height: 300px; */
+        overflow: hidden;
+        position: absolute;
+        left: 0;
+        right:0;
+        bottom: 49px;
         top: 44px;
     }
 
