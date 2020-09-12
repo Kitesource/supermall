@@ -1,20 +1,25 @@
 <template>
     <div id="home">
         <nav-bar class="home-nav"><div slot="center">购物街</div></nav-bar>
+        <tab-control class="tab-control"
+                        :titles="['流行', '新款', '精选']"
+                        @tabClick="tabClick"
+                        ref="tabControl1"
+                        v-show="isTabFixed"/>
 
         <scroll 
         class="content" 
         ref="scroll" 
         :probe-type="3" 
         @scroll="contentScroll"
-        :pull-up-load="true" 
-        @pullingUp="loadMore">
-           <home-swiper :banners="banners"/> 
+        :pull-up-load="true"
+        @pullingUp="loadMore" >
+           <home-swiper :banners="banners" @swiperImageLoad="swiperImageLoad"/> 
            <recommend-view :recommends="recommends"/>
            <feature-view/>
-           <tab-control class="tab-control"
-                        :titles="['流行', '新款', '精选']"
-                        @tabClick="tabClick"/>
+           <tab-control :titles="['流行', '新款', '精选']"
+                        @tabClick="tabClick"
+                        ref="tabControl2"/>
             <goods-list :goods="showGoods"/>
         </scroll>
 
@@ -35,6 +40,8 @@ import RecommendView from './childComps/RecommendView'
 import FeatureView from './childComps/FeatureView'
 
 import {getHomeMultidata, getHomeGoods } from 'network/home'
+import {debouce } from 'common/utils'
+import {itemListenerMixin} from 'common/utils'
 
 export default {
     name: 'Home',
@@ -48,6 +55,7 @@ export default {
         Scroll,
         BackTop
     },
+    mixin:[itemListenerMixin],
     data() {
         return {
             banners: [],
@@ -58,7 +66,10 @@ export default {
                 'sell' :{page: 0, list: []}
             },
             currentType: 'pop',
-            isShowBackTop: false
+            isShowBackTop: false,
+            tabOffsetTop: 0,
+            isTabFixed: false,
+            saveY: 0,
         }
     },
     computed: {
@@ -66,6 +77,7 @@ export default {
             return this.goods[this.currentType].list
         }
     },
+    //创建页面时调用
     created() {
         //1.请求多个数据
         this.getHomeMultidata();
@@ -73,6 +85,26 @@ export default {
         this.getHomeGoods('pop');
         this.getHomeGoods('new');
         this.getHomeGoods('sell');
+    },
+    //进入页面时调用
+    activated() {
+        // console.log('进入');
+        this.$refs.scroll.scrollTo(0,this.saveY,0)
+        
+        this.$refs.scroll.refresh()
+    },
+    //离开页面时调用
+    deactivated() {
+        // console.log('离开');
+        //1.保存Y值
+        this.saveY = this.$refs.scroll.getScrollY
+
+        //2.取消全局事件的监听
+        this.$bus.$off('itemImgLoad', this.itemImgListener)
+
+    },
+    //创建完成时调用
+    mounted() {
     },
     methods: {
         /* 
@@ -90,6 +122,8 @@ export default {
                     this.currentType = 'sell'
                     break;
            }
+           this.$refs.tabControl1.currentIndex = index;
+           this.$refs.tabControl2.currentIndex = index;
        },
        backClick() {
         //    console.log('backClick');
@@ -97,12 +131,20 @@ export default {
        },
        contentScroll(position) {
         // console.log(position);
+        //1.判断backTop是否显示
         this.isShowBackTop =  -position.y > 1000
+
+        //2.决定tabControl是否吸顶（posititon = fixed）
+        this.isTabFixed = -position.y > this.tabOffsetTop
        },
+       //实现加载更多的方法
        loadMore() {
            this.getHomeGoods(this.currentType)
-
-        //    this.$refs.scroll.scroll.refresh()
+       },
+       swiperImageLoad() {
+        //获取tabControl的offsetTop
+        //所有组件都有一个属性$el,用来获取组件中的元素
+        this.tabOffsetTop = this.$refs.tabControl2.$el.offsetTop
        },
 
         /* 
@@ -132,22 +174,31 @@ export default {
 <style  scoped>
 
     #home {
-        padding-top: 44px;
+        /* padding-top: 44px; */
+        height: 100vh;
+        position: relative;
     }
 
     .home-nav{
         background-color: var(--color-tint);
         color: #fff;
-        position: fixed;
+
+        /* 使用浏览器原生滚动时，固定头部导航 */
+        /* position: fixed;
         left: 0;
         right: 0;
         top: 0;
-        z-index: 9;
+        z-index: 9; */
     }
 
-    .tab-control{
+    /* .tab-control{
         position: sticky;
         top: 43px;
+        z-index: 9;
+    } */
+
+    .tab-control {
+        position: relative;
         z-index: 9;
     }
 

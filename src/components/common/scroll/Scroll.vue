@@ -18,7 +18,7 @@ export default {
         },
         pullUpLoad: {
             type: Boolean,
-            default:false
+            default: false
         }
     },
     data() {
@@ -31,7 +31,7 @@ export default {
         this.scroll = new BScroll(this.$refs.wrapper,{
             click: true,
             probeType: this.probeType,
-            pullUpLoad: true
+            pullUpLoad: this.pullUpLoad
         })
 
         // 2.监听滚动的位置
@@ -39,20 +39,30 @@ export default {
             // console.log(position);
             this.$emit('scroll', position)
         })
+
+        //监听滚到底部
+        if(this.pullUpLoad) {
+            this.scroll.on('pullingUp', () => {
+                // console.log('滚到底部了');
+                this.$emit('pullingUp')
+            })
+        }
         
-        //监听上拉事件
-        this.scroll.on('pullingUp', ()=> {
-            // console.log('上拉加载更多');
-            this.$emit('pullingUp')
-        })
     },
 
     methods: {
        scrollTo(x, y, time) {
-           this.scroll.scrollTo(x, y, time)
+           this.scroll  && this.scroll.scrollTo(x, y, time)
        },
        finishPullUp() {
-           this.scroll.finishPullUp()
+        this.scroll && this.scroll.finishPullUp()
+       },
+       refresh() {
+           this.scroll && this.scroll.refresh()
+       },
+       //获取页面离开时的高度
+       getScrollY() {
+          return this.scroll ? this.scroll.y : 0
        }
     }
 }
