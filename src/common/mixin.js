@@ -15,3 +15,7 @@ export const itemListerMixin = {
        this.$bus.$on('itemImgLoad', this.itemImgListener) 
     }
 }
+
+export const backtoTopMixin = {
+    
+}

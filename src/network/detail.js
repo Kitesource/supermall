@@ -16,15 +16,15 @@ export function getRecommend() {
 }
 
 export class Goods {
-    constructor(itemInfol,  columns, services) {
-        this.title = itemInfol.title
-        this.desc = itemInfol.desc
-        this.newPrice = itemInfol.price
-        this.oldPrice = itemInfol.oldPrice
-        this.discount = itemInfol.discountDesc
+    constructor(itemInfo,  columns, services) {
+        this.title = itemInfo.title
+        this.desc = itemInfo.desc
+        this.newPrice = itemInfo.price
+        this.oldPrice = itemInfo.oldPrice
+        this.discount = itemInfo.discountDesc
         this.columns = columns
         this.services = services
-        this.realPrice = itemInfol.lowNowPrice
+        this.realPrice = itemInfo.lowNowPrice
     }
 }
 
